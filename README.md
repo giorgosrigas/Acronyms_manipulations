@@ -1,4 +1,4 @@
-# Acronym Manipulations
+# Acronyms Manipulations
 The first function   receives a string as input and returns a list with all the possible acronyms contained in the string.
 
 The second function def find_long_forms(s, acronyms) finds the acronym's long form inside the text.
