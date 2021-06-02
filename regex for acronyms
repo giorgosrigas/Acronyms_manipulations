@@ -1,0 +1,286 @@
+# Q1
+# Student number: C1937886
+
+#Q1.1
+import re
+def read_file(filename):
+    """
+    function which receives a filepath as arguments and
+    returns the content of the file as an entire string.
+    
+    :param filename: a filepath
+    
+    :return: returns the filename content as an entire string.
+    """
+    # open file
+    with open(filename, 'r', encoding="utf8") as file:
+        s = file.read()
+    return s
+
+
+def find_acronyms(s):
+    """
+    function which receives a string as input and returns
+    a list with all the possible acronyms contained in the string.
+    
+    :param s: a string
+    
+    :return: returns a list with all the acronyms contained in the text.
+    """
+    
+    # regex pattern for matching acronyms with at least two successive capital letters.
+    reg = r"\b[a-zA-Z\.-][a-zA-Z\.-]*[A-Z]s?\b\.?"
+    
+    #acounting for punctuation in the text
+    punct = r"(?<!\d)[.,;:](?!\d)"
+    result = re.sub(punct, "", s, 0)
+    
+    # match all the instances derived by the regex pattern above
+    acronyms = list(set(re.findall(reg, result)))
+    
+    # remove ending -s from the acronym and return in i singuklar form
+    for i in range(0,len(acronyms)):
+        if acronyms[i][-1] == 's':
+            acronyms[i]= acronyms[i][:-1]
+    return list(set(acronyms))
+
+#Q1.2
+# q2
+import re 
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
+def find_long_forms(s, acronyms):
+    """
+    function which receives a string s and a list of acronyms as input and returns a
+    dictionary with the given acronyms as keys and their long form found on the string
+    as value.
+    
+    :param s: a string
+    :param acronyms: a list with acronyms
+    
+    :return: returns a dictionary with the acronyms from the list as keys and their long form
+    found on text as value.
+    """
+    
+    # define a list with stop words
+    stop = [ "it", "its", "itself", "they", "them", "what", "which", "who", "whom", "this", "that", "these", "those", "am", "is","do", "does", "did", "doing", "a", "an", "and", "but", "if", "or", "until", 
+            "while", "of", "at", "by", "for", 've', 'te', "with", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "to", "from", "up", "down", "in", "out", "on", "off", "over", "under"]
+    # strip possible accent from the text
+    def remove_accent(s):
+        s = re.sub(u"[àáâãäå](?i)", 'a', s)
+        s = re.sub(u"[èéêë](?i)", 'e', s)
+        s = re.sub(u"[ìíîï](?i)", 'i', s)
+        s = re.sub(u"[òóôõö](?i)", 'o', s)
+        s = re.sub(u"[ùúûü](?i)", 'u', s)
+        s = re.sub(u"[ýÿ](?i)", 'y', s)
+        return s
+    first_st = remove_accent(s)
+    
+    # remove punctuation
+    s = re.sub(r'[^\w\s]',' ',first_st)
+    
+    # remove stop words  from the text 
+    lst_s = s.split()
+    lst_s = [x for x in lst_s if x not in stop]
+    s = (" ").join(lst_s)
+    s = re.sub(r'[^\w\s]',' ',s)
+    
+    # define the dictionary d and initiate it with the acronyms as keys
+    d = {}
+    [d.update( {acronyms[j] : None} ) for j in range(len(acronyms))]
+
+    # regex patterns for finding different cases of acronym long forms
+    patterns1 = [f'({"(?i)"+ item + "(?i)"}).+?({" ".join("(?i)" + c + "[A-Za-z]+" for c in item)})(?: )' for item in acronyms] 
+    patterns2 = [f'({" ".join( "(?i)" + c + "[A-Za-z]+" for c in item)}).+?({"(?i)" + item + "(?i)"})(?: )' for item in acronyms] 
+    patterns3 =  [f'({item[0]}[A-Za-z]*\s{item[1:]}).+?({item})(?!\S)' for item in acronyms] 
+    patterns4 = [rf'\b({item})\b.+?\b({item[0]}[a-z]*\s{item[1:]})(?!\S)'  for item in acronyms]
+    patterns5 =  [f'({item}).+?({" ".join( "(?i)" + char  + "[A-Za-z]+" for char in item)})(?: )' for item in acronyms] 
+    
+    # search for the patterns above and put their matches in dictionaries with acronym as key and log form as value
+    result1 = dict(match.groups() for match in (re.search(p, s,  re.IGNORECASE) for p in patterns1) if match)
+    result2 = dict(m.groups() for m in (re.search(p, s,  re.IGNORECASE) for p in patterns2) if m)
+    result2 = {value:key for key, value in result2.items()}
+    result3= dict(m.groups() for m in (re.search(p, s,  re.IGNORECASE) for p in patterns3) if m)
+    result3= {value:key for key, value in result3.items()}
+    result4= dict(m.groups() for m in (re.search( p , s,  re.IGNORECASE) for p in patterns4) if m)
+    result5= dict(m.groups() for m in (re.search(p, s,  re.IGNORECASE) for p in patterns5) if m)
+
+    # merge all the dictionaries for the difefrent cases of long forms
+    dic = {**result1, **result2, **result3,**result4, **result5}
+
+    # define value as None if there has not been found any long form
+    for k in d.keys():
+        if k not  in dic.keys():
+            dic[k] = None
+    # dictionary with the acornyms whose long form has been found
+    first_dic = {k:v for k,v in dic.items() if v!= None}
+
+    #dicstionary for the acronyms whose long form has been found such as those whose length is difefrent from the
+    # number of words of their long form (e.g EVD: Eigenvalue Decomposition)
+    dic2 = {k : v for k,v in dic.items() if v == None}
+    
+    # create a list split by line for findings cases explained above
+    s = re.sub(r'[^\w\s]',' ',first_st)
+    lst = re.findall(r'(?:\d[.]|[^.])*(?:[.]|$)',s)
+    t = [word for line in lst for word in line.split()]
+    
+    # initiate lists for later usage
+    compound_string_1_list = []
+    compound_string_2_list = []
+    
+    # loop though the acronyms not found yet and though the list of the text
+    # for finding cases such as EVD: Eigenvalue Decomposition and spliting the compound word.
+    for acro in dic2.keys():
+        for word in t:
+            for line in lst:
+                try:
+                    if acro and word in line:
+                        for char in acro:
+                            if char.lower() in word and char not in word[0] and word not in acronyms and word[0].lower() == acro[acro.index(char) - 1].lower():
+                                if t[t.index(word) + 1][0].lower() in acro.lower() or\
+                                t[t.index(word) + 1][0].lower() not in acro.lower() and char == acro[-1]:
+                                    
+                                    # checking if the acronym and the compound word have at least two similar
+                                    # characters by converting them into sets and then finding their intersection
+                                    len_word = set(word.lower())
+                                    len_acro = set(acro.lower())
+                                    shared = len(len_word & len_acro) 
+                                    if shared >= 2:
+                                        if word and acro in line:
+                                            # setting a sensible length for the compound word ro limit down false positives
+                                            if len(word) > 6:
+                                                # setting more conditions to find the compound words
+                                                if word[0].lower() == acro[acro.index(char) -1 ].lower()\
+                                                and t[t.index(word) + 1][0].lower() in acro.lower()\
+                                                or t[t.index(word) - 1][0].lower() in acro.lower():
+                                                    if char not in word[-1]:
+                                                        # checking for the case that the compound word is the acronym's second word 
+                                                        # such as the instance Eigenvalue Decomposition
+                                                        if t[t.index(word) - 1][0].lower() == acro[acro.index(char) - 2 ][0].lower()\
+                                                        and word[0].lower() == acro[1].lower():
+                                                            composite1 = word
+                                                            character1 = char.lower()
+                                                            index1 = composite1.index(character1)
+                                                            compound1 = composite1[: index1] + ' ' + composite1[index1 :]
+                                                            if len(composite1[: index1]) > 3 and len(composite1[index1 :]) > 3:
+                                                                character1 = char.lower()
+                                                                index1 = word.index(character1)
+                                                                # splitting the compound word
+                                                                compound1 = word[: index1] + ' ' + word[index1 :]
+                                                                # the whole long form of the acronyms with the compound word
+                                                                compound_string_1 = t[t.index(word) - 1] + ' '+ word[: index1]\
+                                                                + ' ' + word[index1 :] 
+                                                                compound_string_1_list.append(compound_string_1)
+                                                                # replacing the compound word with the split compound word in the text
+                                                                t[t.index(word)] = compound1
+                                                        
+                                                        # checking for the case that the compound word is the acronym's first word 
+                                                        elif t[t.index(word) + 1][0].lower() == acro[acro.index(char) + 1 ][0].lower()\
+                                                        and t[t.index(word) + 1][0].lower() == acro[-1].lower():
+                                                            composite2 = word
+                                                            character2 = char.lower()
+                                                            index2 = composite2.index(character2)
+                                                            # splitting the compound word
+                                                            compound2 = composite2[: index2] + ' ' + composite2[index2 :]
+                                                            # the whole long form of the acronyms with the compound word
+                                                            compound_string_2 = word[: index2] + ' ' + word[index2 :] + ' ' +\
+                                                            t[t.index(word) + 1]
+                                                            t[t.index(composite2)] = compound2
+                                                            # replacing the compound word with the split compound word in the text
+                                                            compound_string_2_list.append(compound_string_2)
+
+                except:
+                    break
+    # list.split and punctuation cleaning for the string with the split compound words
+    new_lst = [word for spaces in t for word in spaces.split()]
+    b = (" ").join(new_lst)
+    s = re.sub(r'[^\w\s]',' ',b)
+    lst_s = s.split()
+    lst_s = [x for x in lst_s if x not in stop]
+    s = (" ").join(lst_s)
+    s = re.sub(r'[^\w\s]',' ',s)
+    
+    # patterns for matching long forms for the ramaining acronyms 
+    patterns1 = [f'({"(?i)"+ item + "(?i)"}).+?({" ".join("(?i)" + c + "[A-Za-z]+" for c in item)})(?: )' for item in dic2.keys()] 
+    patterns2 = [f'({" ".join( "(?i)" + c + "[A-Za-z]+" for c in item)}).+?({"(?i)" + item + "(?i)"})(?: )' for item in dic2.keys()] 
+    patterns3 =  [f'({item[0]}[A-Za-z]*\s{item[1:]}).+?({item})(?!\S)' for item in dic2.keys()] 
+    patterns4 = [rf'\b({item})\b.+?\b({item[0]}[a-z]*\s{item[1:]})(?!\S)'  for item in dic2.keys()]
+    patterns5 =  [f'({item}).+?({" ".join( "(?i)" + char  + "[A-Za-z]+" for char in item)})(?: )' for item in dic2.keys()] 
+    
+    # searching for the patterns above aand puting the matches in a dictionary along with their acronym
+    result1 = dict(match.groups() for match in (re.search(p, s,  re.IGNORECASE) for p in patterns1) if match)
+    result2 = dict(m.groups() for m in (re.search(p, s,  re.IGNORECASE) for p in patterns2) if m)
+    result2 = {value:key for key, value in result2.items()}
+    result3= dict(m.groups() for m in (re.search(p, s,  re.IGNORECASE) for p in patterns3) if m)
+    result3= {value:key for key, value in result3.items()}
+    result4= dict(m.groups() for m in (re.search( p , s,  re.IGNORECASE) for p in patterns4) if m)
+    result5= dict(m.groups() for m in (re.search(p, s,  re.IGNORECASE) for p in patterns5) if m)
+    
+    # merning all the dictionaries above
+    second_dic = {**result1, **result2, **result3,**result4, **result5}
+    
+    # defining as None if a long form has not been found
+    for k in dic2.keys():
+        if k not  in second_dic.keys():
+            second_dic[k] = None
+
+    # removing ending 's' i as the last character of an acronym 
+    for k,v in dic.items():
+        if v != None and v[-1] == 's' and k[-1] != 's' and (k + 's') in s:
+            dic[k] = v[:-1] 
+
+   # merging the two main dictionaries
+    d = {**first_dic, **second_dic}
+    
+    # merging the compounds words after their split 
+    for k,v in d.items():
+        for string in compound_string_2_list:
+            if v == string:
+                d[k] = re.sub("\s", "", string, 1)
+        for string2 in compound_string_1_list:
+            if v == string2:
+                d[k] = re.sub(r'^((?:(?!\s+).)*\s+(?:(?!\s+).)*)\s+', r'\1''', string2)
+    return d
+
+#Q1.3
+def replace_acronyms(s, d):
+    """
+    function which receives a string and a dictionary with key-value pairs
+    where key is the acronym and value is its long form. The function returns 
+    a new string in which the acronyms contained in text and in the dictionary
+    have been replaced by their long form as defined in the dictionary.
+    
+    :param filename: a string
+    :param filename: a dictionary with kith key-value pais as defined above
+    
+    :return: returns a new string where the acronyms contained in the dictionary's keys 
+    and in the text, have been replaced by their long form.
+    """
+    # positioning the relevant punctuation one space forward, removing new line breaks and turning the string into a list 
+    space = re.compile(r"([.()!,])")
+    spaced_str = space.sub(" \\1 ", s)
+    spaced_str = spaced_str.replace('\n', ' ')
+    list2 = re.split(r'(?<=\.) ', spaced_str)
+    
+    # parsing the list
+    for k,v in d.items():
+        for i in range(0,len(list2)):
+            #try-except loop adressing for the Error that ocurrs if we use None as value in the d dictionary.
+            try:
+                # looking for sentences in which the acronym's long form is not there.
+                if k in list2[i] and v not in list2[i]:
+                    list3 = str(list2[i]).split(' ')
+                    # capitalize the first word of the acronym's long form  if it is on the begining of a sentence
+                    if list3[1] == k and k in list2[0]:
+                        list2[i] = re.sub (r"\b{}\b".format(k), ' ' + v[0].upper() + v[1:], str(list2[i]))
+                    if k in list2[i].split(' '):
+                        list2[i] = re.sub (r"\b{}\b".format(k), v[0] + v[1:], str(list2[i]))
+                    #  acounting for the case that the acronym is on plural
+                    list2[i] = re.sub (r"\b{}\b".format(k + 's'), v + 's', list2[i])
+            except:
+                pass
+    str1 = ''.join(list2)
+    # placing the punctuation on their inital position
+    new_s= re.sub(' ([,)(!.#$\/:-]) ?',r'\1', str1)
+    return new_s
+
