@@ -8,4 +8,4 @@ The function returns  a new string in which the acronyms contained in text and i
 form as defined in the dictionary.
     
 
-# libraries required to run the code: re
+libraries required to run the code: re
